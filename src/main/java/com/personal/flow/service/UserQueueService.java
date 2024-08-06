@@ -15,6 +15,7 @@ public class UserQueueService {
     private final ReactiveRedisTemplate<String, String> reactiveRedisTemplate;
 
     private static final String WAITING_QUEUE_KEY = "users:queue:%s:wait";
+    private static final String USER_QUEUE_PROCEED_KEY = "users:queue:%s:proceed";
 
     /**
      * 대기열 등록 API
@@ -34,6 +35,29 @@ public class UserQueueService {
             .flatMap(
                 i -> reactiveRedisTemplate.opsForZSet()
                     .rank(WAITING_QUEUE_KEY.formatted(queue), userId.toString()));
+    }
+
+    // 진입이 가능한 상태인지 조회
+    // 진입을 허용
+    public Mono<Long> allowUser(final String queue, final Long count) {
+        long unixTimeStamp = Instant.now().getEpochSecond();
+
+        return reactiveRedisTemplate.opsForZSet().popMin(WAITING_QUEUE_KEY.formatted(queue), count)
+            .flatMap(member -> reactiveRedisTemplate.opsForZSet()
+                .add(USER_QUEUE_PROCEED_KEY.formatted(queue), member.getValue(), unixTimeStamp))
+            .count();
+    }
+
+    /**
+     * 진입이 허용된 상태의 유저인지 확인
+     * @param queue
+     * @param userId
+     * @return
+     */
+    public Mono<Boolean> isAllowed(final String queue, final Long userId){
+        return reactiveRedisTemplate.opsForZSet().rank(USER_QUEUE_PROCEED_KEY.formatted(queue), userId.toString())
+            .defaultIfEmpty(-1L)
+            .map(rank-> rank >= 0);
     }
 
 }
