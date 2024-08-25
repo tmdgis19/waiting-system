@@ -36,7 +36,7 @@ public class WaitingRoomController {
                     .onErrorResume(ex -> userQueueService.getRankNumber(queue, userId))
                     .map(rank -> Rendering.view("waiting-room.html")
                         .modelAttribute("number", rank)
-                        .modelAttribute("userId", userId)
+                        .modelAttribute("user_id", userId)
                         .modelAttribute("queue", queue)
                         .build()
                     )
