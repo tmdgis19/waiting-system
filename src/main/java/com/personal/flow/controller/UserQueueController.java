@@ -2,15 +2,19 @@ package com.personal.flow.controller;
 
 import com.personal.flow.dto.AllowUserResponse;
 import com.personal.flow.dto.AllowedUserResponse;
+import com.personal.flow.dto.RankNumberResponse;
 import com.personal.flow.dto.RegisterUserResponse;
 import com.personal.flow.service.UserQueueService;
+import java.security.NoSuchAlgorithmException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseCookie;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 @RestController
@@ -39,9 +43,32 @@ public class UserQueueController {
     @GetMapping("/allowed")
     public Mono<AllowedUserResponse> isAllowedUser(
         @RequestParam(name = "queue", defaultValue = "default") String queue,
-        @RequestParam("userId") Long userId){
+        @RequestParam("userId") Long userId) {
         return userQueueService.isAllowed(queue, userId)
-            .map(isAllowed-> new AllowedUserResponse(userId, isAllowed));
+            .map(isAllowed -> new AllowedUserResponse(userId, isAllowed));
+    }
+
+    @GetMapping("/rank")
+    public Mono<RankNumberResponse> getRank(
+        @RequestParam(name = "queue", defaultValue = "default") String queue,
+        @RequestParam(name = "user_id") Long userId) {
+        return userQueueService.getRankNumber(queue, userId)
+            .map(RankNumberResponse::new);
+    }
+
+    @GetMapping("/touch")
+    Mono<String> touch(@RequestParam(name = "queue", defaultValue = "default") String queue,
+        @RequestParam("user_id") Long userId, ServerWebExchange exchange) {
+        return Mono.defer(() -> userQueueService.generateToken(queue, userId))
+            .map(token -> {
+                exchange.getResponse().addCookie(
+                    ResponseCookie.from("users-queue-%s-token".formatted(queue), token)
+                        .path("/")
+                        .maxAge(300)
+                        .build()
+                );
+                return token;
+            });
     }
 
 }
