@@ -36,6 +36,15 @@ Non-Blocking이란 말 그대로 막히지 않는다는 의미이다. 그럼 무
 비동기 Non-Blocking이라고 했을 때 무엇이 일치하지 않는다는 것인지 잘 알지 못했다. 이번에 Non-Blocking을 살펴보며 I/O 작업을 호출한 스레드와
 작업 결과를 반환 받는 스레드가 일치하지 않을 수 있다는 것으로 그 의미를 잘 이해할 수 있었다.
 
+#### Back Pressure
+Non-Blocking에 대해 간략히 알아봤는데, 그럼 Reactive Streams에서 Non-Blocking은 어떻게 적용되는가?
+바로 Back Pressure라는 방법을 통해 구현된다. Reactive Streams는 이벤트 기반으로 작동한다.
+즉 HTTP 요청과 같은 이벤트가 발생하면 Publisher가 이벤트를 발행하고 Subscriber가 이벤트를 구독하여 처리한다.
+
+그런데 Subscriber의 이벤트 처리가 느려서 Publisher가 발행한 이벤트가 처리되지 못하고 쌓이기만 하면 어떻게 될까? 
+이벤트 대기열을 만들어 일정량은 보관할 수 있겠지만 쌓이는 속도가 빠르면 결국 대기열이 가득찰 것이다. 그렇다고 대기열을 제한 없이 무작정 사이즈를 늘리면
+메모리가 부족해질 것이다. 이를 극복하기 위해 Back Pressure라는 개념이 등장했다. Back Pressure는 Publisher가 이벤트를 일방적으로 발행하는 것이 아니라
+Subscriber가 처리 가능한 수만큼 요청하면 그 수만큼만 이벤트를 발행하는 방식을 말한다. 처리 가능한 수만큼 이벤트를 발행하니 이벤트가 쌓여서 발생하는 문제는 해결된다.
 
 ## Redis 
 
